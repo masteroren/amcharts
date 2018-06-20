@@ -6,5 +6,12 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'app';
+
+  barClicked(e) {
+    console.log('clicked', e);
+  }
+
+  timeLineFiltered(e) {
+    console.log('filtered', e);
+  }
 }
