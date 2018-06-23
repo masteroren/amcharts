@@ -331,9 +331,11 @@ export class TimelineComponent implements OnInit {
           const startWeek = items[0].data.week
           const endWeek = items[items.length - 1].data.week;
 
+          let week = startWeek;
+
           for (let year = startYear; year <= endYear; year++) {
             for (let month = startMonth; month <= endMonth; month++) {
-              for (let week = startWeek; week <= endWeek; week++) {
+              for (let i = 1; i <= 4; i++, week++) {
                 dateSegments.push({
                   year: year,
                   month: month,
