@@ -12,6 +12,6 @@ export class AppComponent {
   }
 
   timeLineFiltered(e) {
-    console.log('filtered', e);
+    console.log('filter', e);
   }
 }
