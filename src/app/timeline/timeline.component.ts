@@ -178,19 +178,50 @@ export class TimelineComponent implements OnInit {
 
     xItems.forEach((xItem: IDateSegment) => {
 
-      const date = new Date(xItem.year, xItem.month, xItem.day, xItem.hour, xItem.minute, xItem.second);
-      const dateValue = date.getTime();
+      switch (this.timeFrame) {
+        case TimeFrames.weeks:
 
-      _dataProvider = [..._dataProvider, {
-        key: moment(date).format(this.timeFrameFormats[this.timeFrame].format),
-        value: 0,
-        data: xItem,
-        date: dateValue
-      }]
+          {
+            const date = new Date(xItem.year, xItem.month, xItem.day, xItem.hour, xItem.minute, xItem.second);
+            const dateValue = date.getTime();
+
+            _dataProvider = [..._dataProvider, {
+              key: moment(date).format(this.timeFrameFormats[TimeFrames.months].format) + ' ' + xItem.week,
+              value: 0,
+              data: xItem,
+              date: dateValue
+            }]
+
+          }
+
+          break
+        default:
+
+          {
+            const date = new Date(xItem.year, xItem.month, xItem.day, xItem.hour, xItem.minute, xItem.second);
+            const dateValue = date.getTime();
+
+            _dataProvider = [..._dataProvider, {
+              key: moment(date).format(this.timeFrameFormats[this.timeFrame].format),
+              value: 0,
+              data: xItem,
+              date: dateValue
+            }]
+          }
+
+          break;
+      }
 
     });
 
     this.dataProvider = _dataProvider;
+
+    console.log('data provider => ', this.dataProvider);
+
+    if (this.chart) {
+      this.chart.dataProvider = this.dataProvider;
+      this.chart.validateData();
+    }
   }
 
   private setTimelineValues(items: IItem[]) {
@@ -206,6 +237,12 @@ export class TimelineComponent implements OnInit {
           dpItem = this.dataProvider.find((dpi: IDataProviderItem) =>
             dpi.data.year === item.data.year &&
             dpi.data.month === item.data.month);
+          break;
+        case TimeFrames.weeks:
+          dpItem = this.dataProvider.find((dpi: IDataProviderItem) =>
+            dpi.data.year === item.data.year &&
+            dpi.data.month === item.data.month &&
+            dpi.data.week === item.data.week);
           break;
       }
 
@@ -287,9 +324,11 @@ export class TimelineComponent implements OnInit {
         {
           const startYear = items[0].data.year;
           const endYear = items[items.length - 1].data.year;
+          const startMonth = items[0].data.month;
+          const endMonth = items[items.length - 1].data.month;
 
           for (let year = startYear; year <= endYear; year++) {
-            for (let month = 0; month <= 11; month++) {
+            for (let month = startMonth; month <= endMonth; month++) {
               const daysInMonth = moment(new Date(year, month)).daysInMonth();
               const weeksInMonths = Math.round(daysInMonth / 7);
               for (let week = 1; week <= weeksInMonths; week++) {
@@ -297,7 +336,7 @@ export class TimelineComponent implements OnInit {
                   year: year,
                   month: month,
                   week: week,
-                  day: 1,
+                  day: 7 * (week - 1) + 1,
                   hour: null,
                   minute: null,
                   second: null
@@ -378,7 +417,7 @@ export class TimelineComponent implements OnInit {
             let _items = this.getItems(from, to);
             let _xValues = this.getXItems(_items);
             this.initDataProvider(_xValues);
-            // this.setTimelineValues(_items);
+            this.setTimelineValues(_items);
           }
 
 
