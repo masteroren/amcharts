@@ -152,6 +152,7 @@ export class TimelineComponent implements OnInit {
           data: {
             year: dateValue.getFullYear(),
             month: dateValue.getMonth(),
+            week: moment(dateValue).week(),
             day: dateValue.getDate(),
             hour: dateValue.getHours(),
             minute: dateValue.getMinutes(),
@@ -322,21 +323,22 @@ export class TimelineComponent implements OnInit {
       case TimeFrames.weeks:
 
         {
+
           const startYear = items[0].data.year;
           const endYear = items[items.length - 1].data.year;
           const startMonth = items[0].data.month;
           const endMonth = items[items.length - 1].data.month;
+          const startWeek = items[0].data.week
+          const endWeek = items[items.length - 1].data.week;
 
           for (let year = startYear; year <= endYear; year++) {
             for (let month = startMonth; month <= endMonth; month++) {
-              const daysInMonth = moment(new Date(year, month)).daysInMonth();
-              const weeksInMonths = Math.round(daysInMonth / 7);
-              for (let week = 1; week <= weeksInMonths; week++) {
+              for (let week = startWeek; week <= endWeek; week++) {
                 dateSegments.push({
                   year: year,
                   month: month,
                   week: week,
-                  day: 7 * (week - 1) + 1,
+                  day: 1,
                   hour: null,
                   minute: null,
                   second: null

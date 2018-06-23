@@ -3,7 +3,6 @@ export interface IDateSegment {
     month?: number;
     week?: number,
     day?: number;
-    dayOfWeek?: number;
     hour?: number;
     minute?: number;
     second?: number;
