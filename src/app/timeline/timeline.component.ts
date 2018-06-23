@@ -329,7 +329,6 @@ export class TimelineComponent implements OnInit {
           const startMonth = items[0].data.month;
           const endMonth = items[items.length - 1].data.month;
           const startWeek = items[0].data.week
-          const endWeek = items[items.length - 1].data.week;
 
           let week = startWeek;
 
