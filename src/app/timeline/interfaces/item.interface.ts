@@ -1,7 +1,7 @@
 import { IDateSegment } from "./date-segment.interface";
 
 export interface IItem {
-    id: number;
+    ID: number;
     type: string;
     date: number;
     data: IDateSegment;

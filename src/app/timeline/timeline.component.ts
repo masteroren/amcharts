@@ -6,6 +6,8 @@ import { IItem } from './interfaces/item.interface';
 import { IDataProviderItem } from './interfaces/data-provider.interface';
 import { TimelineService } from './services/timeline.service';
 import { IDateSegment } from './interfaces/date-segment.interface';
+import { ClassGetter } from '@angular/compiler/src/output/output_ast';
+import { IFallbackView } from './interfaces/fallback-item.interface';
 
 enum TimeFrames {
   years,
@@ -46,6 +48,14 @@ export class TimelineComponent implements OnInit {
   private chart: any;
   private items: IItem[] = [];
 
+  private fallbackViews = {
+    year: null,
+    month: null,
+    week: null,
+    day: null,
+    hour: null,
+  }
+
   constructor(private AmCharts: AmChartsService, private timelineService: TimelineService) { }
 
   ngOnInit() {
@@ -53,7 +63,7 @@ export class TimelineComponent implements OnInit {
     this.timelineService.getNodes().subscribe((nodes: INode[]) => {
 
       this.nodes = Object.entries(nodes).map(x => x[1]);
-      console.log('nodes => ', this.nodes);
+      // console.log('nodes => ', this.nodes);
 
       this.prepareDataProvider();
 
@@ -63,7 +73,8 @@ export class TimelineComponent implements OnInit {
         chartScrollbar: {
           autoGridCount: true,
           graph: "g1",
-          scrollbarHeight: 40
+          scrollbarHeight: 40,
+          updateOnReleaseOnly: true
         },
         dataProvider: this.dataProvider,
         mouseWheelZoomEnabled: true,
@@ -98,6 +109,12 @@ export class TimelineComponent implements OnInit {
           enabled: true
         },
         listeners: [
+          {
+            event: "rendered",
+            method: (e) => {
+              console.log('rendered');
+            }
+          },
           {
             event: "clickGraphItem",
             method: (e) => {
@@ -146,7 +163,7 @@ export class TimelineComponent implements OnInit {
         const dateValue = new Date(dateAttr.Value * 1000);
 
         _items = [..._items, {
-          id: node.ID,
+          ID: node.ID,
           type: node.TypeID,
           date: dateAttr.Value,
           data: {
@@ -167,7 +184,7 @@ export class TimelineComponent implements OnInit {
       return a.date - b.date;
     });
 
-    console.log('timeline items => ', _items);
+    // console.log('timeline items => ', _items);
 
     return _items;
 
@@ -217,7 +234,7 @@ export class TimelineComponent implements OnInit {
 
     this.dataProvider = _dataProvider;
 
-    console.log('data provider => ', this.dataProvider);
+    // console.log('data provider => ', this.dataProvider);
 
     if (this.chart) {
       this.chart.dataProvider = this.dataProvider;
@@ -245,6 +262,19 @@ export class TimelineComponent implements OnInit {
             dpi.data.month === item.data.month &&
             dpi.data.week === item.data.week);
           break;
+        case TimeFrames.days:
+          dpItem = this.dataProvider.find((dpi: IDataProviderItem) =>
+            dpi.data.year === item.data.year &&
+            dpi.data.month === item.data.month &&
+            dpi.data.day === item.data.day);
+          break;
+        case TimeFrames.hours:
+          dpItem = this.dataProvider.find((dpi: IDataProviderItem) =>
+            dpi.data.year === item.data.year &&
+            dpi.data.month === item.data.month &&
+            dpi.data.day === item.data.day &&
+            dpi.data.hour === item.data.hour);
+          break;
       }
 
       if (dpItem) {
@@ -254,7 +284,7 @@ export class TimelineComponent implements OnInit {
       }
     })
 
-    console.log('data provider => ', this.dataProvider);
+    // console.log('data provider => ', this.dataProvider);
 
 
     if (this.chart) {
@@ -272,13 +302,10 @@ export class TimelineComponent implements OnInit {
       case TimeFrames.years:
 
         {
-          const firstYear = items[0].data.year;
-          const lastYear = items[items.length - 1].data.year;
+          const startYear = items[0].data.year;
+          const endYear = items[items.length - 1].data.year;
 
-          console.log('first year => ', firstYear);
-          console.log('last year => ', lastYear);
-
-          for (let year = firstYear; year < lastYear; year++) {
+          for (let year = startYear; year < endYear; year++) {
             dateSegments.push({
               year: year,
               month: 0,
@@ -290,7 +317,7 @@ export class TimelineComponent implements OnInit {
           }
 
           dateSegments.push({
-            year: lastYear,
+            year: endYear,
             month: 11,
             day: moment(items[items.length - 1].date).daysInMonth(),
             hour: 23,
@@ -303,9 +330,9 @@ export class TimelineComponent implements OnInit {
       case TimeFrames.months:
 
         {
-          const minYear = items[0].data.year;
-          const maxYear = items[items.length - 1].data.year;
-          for (let year = minYear; year <= maxYear; year++) {
+          const startYear = items[0].data.year;
+          const endYear = items[items.length - 1].data.year;
+          for (let year = startYear; year <= endYear; year++) {
             for (let month = 0; month <= 11; month++) {
               dateSegments.push({
                 year: year,
@@ -324,36 +351,72 @@ export class TimelineComponent implements OnInit {
 
         {
 
-          const startYear = items[0].data.year;
-          const endYear = items[items.length - 1].data.year;
-          const startMonth = items[0].data.month;
-          const endMonth = items[items.length - 1].data.month;
+          const year = items[0].data.year;
+          const month = items[0].data.month;
           const startWeek = items[0].data.week
 
           let week = startWeek;
 
-          for (let year = startYear; year <= endYear; year++) {
-            for (let month = startMonth; month <= endMonth; month++) {
-              for (let i = 1; i <= 4; i++, week++) {
-                dateSegments.push({
-                  year: year,
-                  month: month,
-                  week: week,
-                  day: 1,
-                  hour: null,
-                  minute: null,
-                  second: null
-                });
-              }
+          for (let i = 1; i <= 4; i++ , week++) {
+            dateSegments.push({
+              year: year,
+              month: month,
+              week: week,
+              day: 1,
+              hour: null,
+              minute: null,
+              second: null
+            });
+          }
+        }
 
-            }
+        break;
+
+      case TimeFrames.days:
+
+        {
+          const year = items[0].data.year;
+          const month = items[0].data.month;
+          const startDay = items[0].data.day;
+          const endDay = items[items.length - 1].data.day;
+
+          for (let day = startDay; day <= endDay; day++) {
+            dateSegments.push({
+              year: year,
+              month: month,
+              day: day,
+              hour: null,
+              minute: null,
+              second: null
+            });
+          }
+        }
+
+        break;
+
+      case TimeFrames.hours:
+
+        {
+          const year = items[0].data.year;
+          const month = items[0].data.month;
+          const day = items[0].data.day;
+
+          for (let hour = 1; hour <= 24; hour++) {
+            dateSegments.push({
+              year: year,
+              month: month,
+              day: day,
+              hour: hour,
+              minute: null,
+              second: null
+            });
           }
         }
 
         break;
     }
 
-    console.log('xItems => ', dateSegments);
+    // console.log('xItems => ', dateSegments);
 
     return dateSegments;
 
@@ -367,18 +430,18 @@ export class TimelineComponent implements OnInit {
       return a.date - b.date;
     });
 
-    console.log('filterd items => ', _items);
+    // console.log('filterd items => ', _items);
 
     return _items;
   }
 
   private handleZoom(e) {
 
-    const startIndex = e.startIndex;
-    const endIndex = e.endIndex;
+    const fromIndex = e.startIndex;
+    const toIndex = e.endIndex;
 
-    let fromData: IDateSegment = e.chart.dataProvider[startIndex].data;
-    let toData: IDateSegment = e.chart.dataProvider[endIndex].data;
+    const fromData: IDateSegment = e.chart.dataProvider[fromIndex].data;
+    const toData: IDateSegment = e.chart.dataProvider[toIndex].data;
 
     switch (this.timeFrame) {
       case TimeFrames.years:
@@ -387,22 +450,28 @@ export class TimelineComponent implements OnInit {
 
           let from = new Date(fromData.year, 0, 1, 0, 0, 0).getTime();
           let to = new Date(toData.year, 11, 31, 23, 59, 59).getTime();
-
           let durationInMonths = Math.floor(moment.duration({ from: from, to: to }, 'd').asMonths());
 
-          console.log('durationInMonths => ', durationInMonths);
+          // console.log('durationInMonths => ', durationInMonths);
 
           if (durationInMonths === 24) {
+
+            this.fallbackViews.year = {
+              dataProvider: this.dataProvider,
+              timeFrame: this.timeFrame,
+              fromIndex: fromIndex,
+              toIndex: toIndex
+            }
+
             this.timeFrame = TimeFrames.months;
-            let _items = this.getItems(from, to);
-            let _xValues = this.getXItems(_items);
-            this.initDataProvider(_xValues);
-            this.setTimelineValues(_items);
+            this.drawChart(from, to);
+
           }
 
         }
 
         break;
+
       case TimeFrames.months:
 
         {
@@ -413,22 +482,103 @@ export class TimelineComponent implements OnInit {
 
           let durationInWeeks = Math.floor(moment.duration({ from: from, to: to }, 'd').asWeeks());
 
-          console.log('durationInWeeks => ', durationInWeeks);
+          // console.log('durationInWeeks => ', durationInWeeks);
 
-          if (durationInWeeks <= 8) {
+          if (durationInWeeks <= 12) {
+
+            this.fallbackViews.month = {
+              dataProvider: this.dataProvider,
+              timeFrame: this.timeFrame,
+              fromIndex: fromIndex,
+              toIndex: toIndex
+            }
+
             this.timeFrame = TimeFrames.weeks;
-            let _items = this.getItems(from, to);
-            let _xValues = this.getXItems(_items);
-            this.initDataProvider(_xValues);
-            this.setTimelineValues(_items);
+            this.drawChart(from, to);
           }
 
+        }
+
+        break;
+
+      case TimeFrames.weeks:
+
+        {
+
+          if (toIndex - fromIndex === 1) {
+
+            this.fallbackViews.week = {
+              dataProvider: this.dataProvider,
+              timeFrame: this.timeFrame,
+              fromIndex: fromIndex,
+              toIndex: toIndex
+            }
+
+            let from = new Date(fromData.year, fromData.month, fromData.day, 0, 0, 0).getTime();
+            let to = moment(from).add(8, 'd').toDate().getTime();
+            this.timeFrame = TimeFrames.days;
+            this.drawChart(from, to);
+          }
+
+        }
+
+        break;
+
+      case TimeFrames.days:
+
+        {
+
+          let from = new Date(fromData.year, fromData.month, fromData.day, 0, 0, 0).getTime();
+          let to = new Date(toData.year, toData.month, toData.day, 23, 59, 59).getTime();
+
+          let durationInHours = Math.floor(moment.duration({ from: from, to: to }, 'h').asHours());
+
+          if (durationInHours <= 24) {
+
+            this.fallbackViews.day = {
+              dataProvider: this.dataProvider,
+              timeFrame: this.timeFrame,
+              fromIndex: fromIndex,
+              toIndex: toIndex
+            }
+
+            this.timeFrame = TimeFrames.hours;
+            this.drawChart(from, to);
+          }
 
         }
 
         break;
     }
 
+  }
+
+  private drawChart(from: number, to: number) {
+
+    const _items = this.getItems(from, to);
+    const _xValues = this.getXItems(_items);
+    this.initDataProvider(_xValues);
+    this.setTimelineValues(_items);
+
+  }
+
+  public backToPrevView() {
+    console.log('fallbackView => ', this.fallbackViews);
+
+    let fallbackView;
+
+    switch (this.timeFrame) {
+      case TimeFrames.months:
+        fallbackView = this.fallbackViews.year;
+        break;
+    }
+
+    if (fallbackView) {
+      this.timeFrame = fallbackView.timeFrame;
+      this.chart.dataProvider = fallbackView.dataProvider;
+      this.chart.validateData();
+      // this.chart.zoomToIndexes(fallbackView.fromIndex, fallbackView.toIndex);
+    }
   }
 
   ngOnDestroy(): void {
